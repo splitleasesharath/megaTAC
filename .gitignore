@@ -1,0 +1,19 @@
+# Exclude app directories
+app/
+**/app/
+apps/
+**/apps/
+
+# Exclude .env files
+.env
+**/.env
+.env.*
+**/.env.*
+
+# Exclude agent directories
+agent/
+**/agent/
+
+# Exclude scripts directories
+scripts/
+**/scripts/

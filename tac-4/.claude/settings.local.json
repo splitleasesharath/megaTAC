@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(GH_TOKEN=invalid_token gh api:*)",
+      "Read(//c/Users/Split Lease/splitleaseteam/!Agent Context and Tools/SL1/Practice TAC/z_Test Tac 2/Search TAC 2/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
