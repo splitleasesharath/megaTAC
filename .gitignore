@@ -10,3 +10,11 @@ app/
 
 # Exclude tac-8 (separate git repository)
 tac-8/
+
+# Exclude agent directories
+agent/
+**/agent/
+
+# Exclude scripts directories
+scripts/
+**/scripts/
