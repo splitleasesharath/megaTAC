@@ -18,7 +18,10 @@ import sys
 import os
 import json
 from typing import Dict, List, Optional
-from data_types import GitHubIssue, GitHubIssueListItem
+from .data_types import GitHubIssue, GitHubIssueListItem, GitHubComment
+
+# Bot identifier to prevent webhook loops and filter bot comments
+ADW_BOT_IDENTIFIER = "[ADW-AGENTS]"
 
 
 def get_github_env() -> Optional[dict]:
@@ -40,10 +43,12 @@ def get_github_env() -> Optional[dict]:
     github_pat = os.getenv("GITHUB_PAT")
     if not github_pat:
         return None
-
-    # Inherit parent environment and add/override GH_TOKEN
-    env = os.environ.copy()
-    env["GH_TOKEN"] = github_pat
+    
+    # Only create minimal env with GitHub token
+    env = {
+        "GH_TOKEN": github_pat,
+        "PATH": os.environ.get("PATH", ""),
+    }
     return env
 
 
@@ -124,6 +129,10 @@ def make_issue_comment(issue_id: str, comment: str) -> None:
     github_repo_url = get_repo_url()
     repo_path = extract_repo_path(github_repo_url)
 
+    # Ensure comment has ADW_BOT_IDENTIFIER to prevent webhook loops
+    if not comment.startswith(ADW_BOT_IDENTIFIER):
+        comment = f"{ADW_BOT_IDENTIFIER} {comment}"
+
     # Build command
     cmd = [
         "gh",
@@ -140,18 +149,16 @@ def make_issue_comment(issue_id: str, comment: str) -> None:
     env = get_github_env()
 
     try:
-        # If we have a PAT in env, pass None to let subprocess inherit environment
-        # The gh CLI needs access to system environment for auth
-        result = subprocess.run(cmd, capture_output=True, text=True, env=None)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
 
         if result.returncode == 0:
             print(f"Successfully posted comment to issue #{issue_id}")
         else:
             print(f"Error posting comment: {result.stderr}", file=sys.stderr)
-            sys.exit(result.returncode)
+            raise RuntimeError(f"Failed to post comment: {result.stderr}")
     except Exception as e:
         print(f"Error posting comment: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise
 
 
 def mark_issue_in_progress(issue_id: str) -> None:
@@ -278,3 +285,28 @@ def fetch_issue_comments(repo_path: str, issue_number: int) -> List[Dict]:
             file=sys.stderr,
         )
         return []
+
+
+def find_keyword_from_comment(keyword: str, issue: GitHubIssue) -> Optional[GitHubComment]:
+    """Find the latest comment containing a specific keyword.
+    
+    Args:
+        keyword: The keyword to search for in comments
+        issue: The GitHub issue containing comments
+        
+    Returns:
+        The latest GitHubComment containing the keyword, or None if not found
+    """
+    # Sort comments by created_at date (newest first)
+    sorted_comments = sorted(issue.comments, key=lambda c: c.created_at, reverse=True)
+    
+    # Search through sorted comments (newest first)
+    for comment in sorted_comments:
+        # Skip ADW bot comments to prevent loops
+        if ADW_BOT_IDENTIFIER in comment.body:
+            continue
+            
+        if keyword in comment.body:
+            return comment
+    
+    return None

@@ -1,15 +1,14 @@
 # Exclude app directories
 app/
 **/app/
+apps/
+**/apps/
 
 # Exclude .env files
 .env
 **/.env
 .env.*
 **/.env.*
-
-# Exclude tac-8 (separate git repository)
-tac-8/
 
 # Exclude agent directories
 agent/
