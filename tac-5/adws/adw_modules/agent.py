@@ -188,9 +188,10 @@ def prompt_claude_code(request: AgentPromptRequest) -> AgentPromptResponse:
 
     try:
         # Execute Claude Code and pipe output to file
+        # Timeout set to 4 minutes (240s) to allow graceful handling before external 5min timeout
         with open(request.output_file, "w") as f:
             result = subprocess.run(
-                cmd, stdout=f, stderr=subprocess.PIPE, text=True, env=env
+                cmd, stdout=f, stderr=subprocess.PIPE, text=True, env=env, timeout=240
             )
 
         if result.returncode == 0:
